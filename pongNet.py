@@ -1,82 +1,41 @@
 import random
-def neuralNetwork(input1, input2, input3, externLayer):	#externLayer is (presumably
+import numpy as np
 
-	inputs = [1, 2, 3] #This is the inputs.
-	layer1 = [3.01, 4.01, 5.01, 6.01]#Layer 1 of weights
-	output = 4.01 #output. Defaults to
-	x = 0 #x, is used for a variety of purposes like y
-	y = 0
+def neuralNetwork(inputs, matrix):
+    return neuralNetworkNumpy(inputs, matrix)
 
-	buffer1 = [[0 for x in range(3)] for y in range(4)] #buffer1 is a 4x5 array. I've left extra space
-	#just in case.
+#Just really simple matrix multiplication
+def neuralNetworkNumpy( inputList, inputMatrix ):
+    if ( len(inputList.shape) != 1):
+        raise Exception("Invalid input list")
+#    print "Array: " + str(inputMatrix)
+    if ( len(inputMatrix.shape) > 1 and inputMatrix.shape[1] != inputList.shape[0]):
+        raise Exception("Invalid matrix") #This is critical, if the collumns of the row and length of the input dont match, our math doesnt work
+    result = np.matmul(inputMatrix, inputList)
 
-	inputs[0] = input1
-	inputs[1] = input2
-	inputs[2] = input3
-
-	for x in range(0, 3):
-		layer1[x] = externLayer[x]
+    return (np.sum(result) % 8) + 1 #Processing output for external consumption
 
 
-	x = 0 #Reinitialize the x and y values.
-	y = 0
+def evolve(inputMatrix):
+    changedLayer = random.randint(0, inputMatrix.shape[0])
+    changedElement = random.randint(0, inputMatrix.shape[1] - 1)
+    changedAmount = random.random() - 0.5
 
-	for x in range(0, 3):
-	        buffer1[0][x] = inputs[x]
-	        buffer1[1][x] = inputs[x]
-	        buffer1[2][x] = inputs[x]
-	        buffer1[3][x] = inputs[x]
-	x = 0#Reinitalize the x and y values
-	y = 0
+#    print "\nMatrix Shape: " + str(inputMatrix.shape)
+#    print "\nchanged Element: " + str(changedElement)
+#    print "\nchanged Layer: " + str(changedLayer)
+#    print inputMatrix
 
-	for x in range(0, 3):#Preform neural network arithmetic.
-	        for y in range(0, 3):#Cycles through all of the values
-	                buffer1[x][y] = buffer1[x][y] * layer1[x] # and multiplies it by the weight
-	               # print buffer1[x][y] #Prints all of the output values. Used for troubleshooting.
-	                #Comment out when not needed
+    if ( changedLayer == inputMatrix.shape[0] ): #Chance of adding row to matrix
+        if (changedElement % 3 == 0 and changedAmount > 0.49): # Makes it slightly less likely for new rows to be added. Can and probably should be tweaked
+            addedRow = np.zeros(inputMatrix.shape[1])
+            addedRow[changedElement] = abs(changedAmount)
+            inputMatrix = np.vstack([inputMatrix, addedRow]) #append row to bottom of matrix
+#        print inputMatrix.shape
+            return inputMatrix
+        changedLayer -= 1
 
-	x = 0 #Reinitialize the x and y values
-	y = 0
+    inputMatrix[changedLayer,changedElement] = changedAmount
+    inputMatrix[changedLayer,changedElement] = abs(inputMatrix[changedLayer,changedElement]) #Probably a more elegant way of doing this
 
-	for x in range(0, 3):
-	        for y in range(0, 3):
-	                output = buffer1[x][y] + output
-	#print (output % 8) + 1
-	return (output % 8) + 1
-
-def evolv(e):
-
-        y = 0
-        x = 0
-        #random.seed(a = None)
-        y = random.randint(0, 4)
-        x = random.randint(0, 1)
-        change = .1
-        if(y == 0):
-            if(x == 1 and e[0] <= 7):
-                e[0] = e[0] + change
-            elif(x == 0 and e[0] > 0):
-				e[0] = e[0] - change
-            if e[0] <= 0:
-                e[0] = 0
-        elif(y == 1):
-            if(x == 1 and e[1] <= 7):
-                e[1] = e[1] + change
-            elif(x == 0 and e[1] > 0):
-                e[1] = e[1] - change
-            if e[1] <= 0:
-			 	e[1] = 0
-        elif(y == 2):
-            if(x == 1 and e[2] <= 7):
-            	e[2] = e[2] + change
-            elif(x == 0 and e[2] > 0):
-				e[2] = e[2] - change
-            if e[2] <= 0:
-                e[2] = 0
-        elif(y == 3):
-            if(x == 1 and e[3] <= 7):
-                e[3] = e[3] + change
-            elif(x == 0 and e[3] > 0):
-                e[3] = e[3] - change
-            if e[3] <= 0:
-                e[3] = 0
+    return inputMatrix

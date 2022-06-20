@@ -16,13 +16,17 @@ from pygame.locals import *
 from sys import exit
 import random
 import pongNet
+import numpy as np
 
 #Change this to manipulate speed of simulation
 GLOBAL_WIDTH = 640
 GLOBAL_HEIGHT = 480
-GLOBAL_SPEED = 99999999
-#GLOBAL_SPEED = 50
+#GLOBAL_SPEED = 10000
+GLOBAL_SPEED = 100
 GLOBAL_OFFSET = GLOBAL_HEIGHT / 200
+
+#some misc stuff
+INPUT_VECTOR_SIZE = 3
 
 #generates random number for variance in direction
 def getRandomNum():
@@ -35,7 +39,7 @@ def getWinner(num):
 #returns game statistics of: angle ball is travelling, distance from paddle
 #1 to ball, distance of paddle 2 from ball
 def getStatistics(circle_x, circle_y, bar1_x, bar1_y, bar2_x, bar2_y):
-    out = [0, 0, 0]
+    out = np.zeros(INPUT_VECTOR_SIZE)
     midX = GLOBAL_WIDTH / 2
     midY = GLOBAL_HEIGHT / 2
     dx = midX - circle_x
@@ -66,33 +70,35 @@ def movePadel(currentPosition, changeAmount):
 
 #main method- magic happens here
 def realMain():
-    #initialArray = [2.7755575615628914e-17, 1.2, 4.69630673247786, 0.5]
+    initialArray = np.matrix(
+[[0.08979856, 0.22049639, 0.08403051],
+ [0.33365723, 0.3798235,  0.11734318],
+ [0.16334221, 0.03554528, 0.28749734],
+ [0.08412367, 0.1951593,  0.20303106],
+ [0.35085411, 0.02784529, 0.27004963],
+ [0.41107257, 0.19996041, 0.02709999],
+ [0.3583569,  0.36080941, 0.14824126],
+ [0.12279751, 0.0568518,  0.23538153],
+ [0.07578117, 0.19402304, 0.29132547],
+ [0.10965775, 0.1687085,  0.41158592]])
 
-    initialArray = [0.01, 0.01, 0.01, 0.01]
+    #initialArray = [0.01, 0.01, 0.01, 0.01]
     count = 0
     winner1 = main(initialArray, count)
     count+=1
+    print "Iteration " + str(count) + " = \n" + str(winner1)
     for i in range(1, 1000000):
         winner2 = main(winner1, count)
         winner1 = winner2
-        pongNet.evolv(winner1)
+        #pongNet.evolv(winner1)
         #count+=1
-        print "Iteration" + str(i) + " = " + str(winner2)
+        print "Iteration " + str(i) + " = \n" + str(winner2)
 
-def main(array, count):
+def main(inputMatrix, count):
     pygame.init()
     x = 0
-    layer1 = array
-    layer2 = list(array)
-    pongNet.evolv(layer2)
-    inputs = [1.01, 1.01, 1.01]
-    if count == 0:
-        for x in range(0, 3):
-            layer1[x] = random.uniform(1.0, 6.0)
-        x = 0
-        for x in range(0, 3):
-            layer2[x] = random.uniform(1.0, 6.0)
-
+    matrix1 = pongNet.evolve(inputMatrix)
+    matrix2 = pongNet.evolve(inputMatrix)
     screen=pygame.display.set_mode((GLOBAL_WIDTH, GLOBAL_HEIGHT),0,32)
 
     pygame.display.set_caption("Pong Simulator")
@@ -157,14 +163,12 @@ def main(array, count):
         #ai_speed = 1
         inputs = getStatistics(circle_x, circle_y, bar1_x, bar1_y, bar2_x, bar2_y)
         #right side AI
-        x = pongNet.neuralNetwork(inputs[0], inputs[1], inputs[2], layer1)
+        x = pongNet.neuralNetwork(inputs, matrix1)
     #    print x
-        # TODO determine how to pass parameter
         bar2_y = movePadel(bar2_y, x)
         #Left Side AI position
         #bar1_y = circle_y * getRandomNum();
-        # TODO determine how to pass parameter
-        x = pongNet.neuralNetwork(inputs[0], inputs[1], inputs[2], layer2)
+        x = pongNet.neuralNetwork(inputs, matrix2)
         bar1_y = movePadel(bar1_y, x)
 
         #Collision for left side
@@ -186,13 +190,15 @@ def main(array, count):
         #Increments score
         if circle_x < 5.:
             #print "RIGHT AI WINS"
-            getWinner(1)
-            return layer1
+            #getWinner(1)
+            print "matrix1: " + str(matrix1)
+            return matrix1.copy()
             exit()
         elif circle_x > 620.:
             #print "LEFT AI WINS"
-            getWinner(1)
-            return layer2
+            #getWinner(1)
+            print "matrix2: " + str(matrix2)
+            return matrix2.copy()
             exit()
 
         #Constrains vertical range of ball
